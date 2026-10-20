@@ -51,9 +51,9 @@
   .rail::before{left:-6px}.rail::after{right:-6px}
 
   .garments{position:relative;display:flex;justify-content:center;align-items:flex-start;height:calc(var(--item-h) * 0.97);list-style:none;margin:0;padding:0}
-  .garment{position:relative;flex:0 1 var(--slot);height:100%;transition:flex-basis .4s var(--ease);cursor:pointer}
+  .garment{position:relative;flex:0 1 var(--slot);height:100%;transition:flex-basis .5s var(--ease);cursor:pointer}
   .garment.active{flex:0 0 var(--slot-hover)}
-  .garment .frame{position:absolute;top:0;left:50%;height:100%;aspect-ratio:9/16;transform:translateX(-50%) scale(1);transform-origin:50% 14%;transition:transform .4s var(--ease);will-change:transform}
+  .garment .frame{position:absolute;top:0;left:50%;height:100%;aspect-ratio:9/16;transform:translateX(-50%) scale(1);transform-origin:50% 14%;transition:transform .5s var(--ease);will-change:transform}
   .garment.active{z-index:2}
   .garment.active .frame{transform:translateX(-50%) scale(1.1)}
   .garment img,.garment video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
@@ -254,8 +254,8 @@ const ITEMS = [
     sizes:['S','M','L','XL','XXL'] },
 ];
 const fmt = n => n.toLocaleString('ru-RU') + ' ₽';
-/* Скорость поворота на штанге: 1 = как в исходном видео (~2.5 с), 2.2 ≈ 1.1 с */
-const SPEED = 2.2;
+/* Скорость поворота на штанге: 1 = как в исходном видео (~2.5 с), 1.6 ≈ 1.5 с */
+const SPEED = 1.6;
 /* Safari не умеет прозрачный WebM, зато играет HEVC с альфой; остальные — наоборот */
 const ua = navigator.userAgent;
 const isSafari = /Safari/.test(ua) && !/Chrome|Chromium|Edg|OPR/.test(ua);
