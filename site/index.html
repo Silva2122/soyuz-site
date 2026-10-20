@@ -53,7 +53,8 @@
   .garments{position:relative;display:flex;justify-content:center;align-items:flex-start;height:calc(var(--item-h) * 0.97);list-style:none;margin:0;padding:0}
   .garment{position:relative;flex:0 1 var(--slot);height:100%;transition:flex-basis .5s var(--ease);cursor:pointer}
   .garment.active{flex:0 0 var(--slot-hover)}
-  .garment .frame{position:absolute;top:0;left:50%;height:100%;aspect-ratio:9/16;transform:translateX(-50%) scale(1);transform-origin:50% 14%;transition:transform .5s var(--ease);will-change:transform}
+  /* всё, что выше штанги (верх крючка), обрезаем — плечики как будто висят за штангой */
+  .garment .frame{position:absolute;top:0;left:50%;height:100%;aspect-ratio:9/16;transform:translateX(-50%) scale(1);transform-origin:50% 14%;transition:transform .5s var(--ease);will-change:transform;clip-path:inset(14.2% 0 0 0)}
   .garment.active{z-index:2}
   .garment.active .frame{transform:translateX(-50%) scale(1.1)}
   .garment img,.garment video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
@@ -109,6 +110,15 @@
   .info p{font-size:13px;line-height:1.65;color:#3a3a3a;margin:0 0 18px}
   .field{margin:18px 0}
   .field label{display:block;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .field label .chart-link{float:right;text-transform:none;letter-spacing:.02em;font-size:12px;color:var(--ink);border-bottom:1px solid var(--line)}
+  .chart{display:none;margin-top:14px;padding:16px 18px;background:#fff;border:1px solid var(--line);border-radius:12px}
+  .chart.open{display:block}
+  .chart table{width:100%;border-collapse:collapse;font-size:12.5px}
+  .chart th{font-weight:500;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+  .chart td{padding:8px;border-bottom:1px solid #f0efeb}
+  .chart td:first-child{font-weight:500}
+  .chart tr.cur td{background:var(--bg)}
+  .chart p{margin:12px 0 0;font-size:11.5px;color:var(--muted);line-height:1.5}
   .sizes{display:flex;gap:8px;flex-wrap:wrap}
   .sizes button{min-width:48px;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
   .sizes button.cur{border-color:var(--ink);background:var(--ink);color:#fff}
@@ -207,7 +217,9 @@
     <h1 id="p-title"></h1>
     <div class="price" id="p-price"></div>
     <p id="p-desc"></p>
-    <div class="field"><label>Размер</label><div class="sizes" id="p-sizes"></div></div>
+    <div class="field"><label>Размер <button class="chart-link" id="chart-toggle">Таблица размеров</button></label><div class="sizes" id="p-sizes"></div>
+      <div class="chart" id="chart"><table id="chart-table"></table><p>Замеры изделия в сантиметрах. Грудь — полуобхват под рукавами. Если вы между размерами, берите больший: крой свободный.</p></div>
+    </div>
     <div class="field"><label>Количество</label>
       <div class="qty"><button id="q-minus">−</button><span id="q-val">1</span><button id="q-plus">+</button></div>
     </div>
@@ -237,22 +249,29 @@
    <id>-side.webp, <id>-front.webp (постеры с прозрачностью)
    и добавь запись сюда. */
 const ITEMS = [
-  { id:'cccp',    name:'Олимпийка «СССР»',          sub:'Красная · 1980',      price:8900,
+  { id:'cccp',    name:'Олимпийка «СССР»',          sub:'Красная · 1980',      price:8900, chart:'jacket',
     desc:'Классическая олимпийка сборной. Плотный трикотаж, воротник-стойка, белые канты на воротнике, манжетах и поясе. Крупные буквы на груди вышиты, а не напечатаны.',
     sizes:['S','M','L','XL','XXL'] },
-  { id:'adidas',  name:'Ветровка «Шеврон»',          sub:'Тёмно-синяя · 1990',  price:9400,
+  { id:'adidas',  name:'Ветровка «Шеврон»',          sub:'Тёмно-синяя · 1990',  price:9400, chart:'jacket',
     desc:'Ветровка с цветными шевронами на плечах — красный, белый, голубой. Лёгкая плащёвка, молния до горла, два прорезных кармана.',
     sizes:['S','M','L','XL'] },
-  { id:'spartak', name:'Джерси «Ромб»',               sub:'Красная · 1987',      price:7200,
+  { id:'spartak', name:'Джерси «Ромб»',               sub:'Красная · 1987',      price:7200, chart:'jersey',
     desc:'Длинный рукав, V-образный ворот, тонкие полосы в два оттенка красного. Белый ромб на груди и три полосы на плечах — как на домашней форме восьмидесятых.',
     sizes:['S','M','L','XL','XXL'] },
-  { id:'misha',   name:'Футболка «Мишка»',            sub:'Молочная · 1980',     price:4900,
+  { id:'misha',   name:'Футболка «Мишка»',            sub:'Молочная · 1980',     price:4900, chart:'tee',
     desc:'Реглан с красными рукавами и двумя белыми полосами. На груди — олимпийский Мишка с букетом ромашек и эмблема Москвы-80. Хлопок 220 г, принт шелкография.',
     sizes:['XS','S','M','L','XL'] },
-  { id:'sweater', name:'Свитер «Кремль»',             sub:'Синий · 1980',        price:11900,
+  { id:'sweater', name:'Свитер «Кремль»',             sub:'Синий · 1980',        price:11900, chart:'sweater',
     desc:'Вязаный свитер в стиле олимпийской сборной: тёмно-синяя шерсть, молочная вставка с эмблемой Москвы-80 и силуэтом Спасской башни, красно-белые полосы по рукавам и диагонали. Плотная вязка, круглый ворот.',
     sizes:['S','M','L','XL','XXL'] },
 ];
+/* Размерные сетки, см: [размер, грудь (полуобхват), длина, рукав, рост] */
+const CHARTS = {
+  jacket:  { cols:['Размер','Грудь','Длина','Рукав','Рост'], rows:[['S',52,66,62,'164–170'],['M',55,68,64,'170–176'],['L',58,70,66,'176–182'],['XL',61,72,67,'182–188'],['XXL',64,74,68,'188–194']] },
+  jersey:  { cols:['Размер','Грудь','Длина','Рукав','Рост'], rows:[['S',50,70,61,'164–170'],['M',53,72,63,'170–176'],['L',56,74,65,'176–182'],['XL',59,76,66,'182–188'],['XXL',62,78,67,'188–194']] },
+  tee:     { cols:['Размер','Грудь','Длина','Рукав','Рост'], rows:[['XS',49,66,22,'158–164'],['S',52,68,23,'164–170'],['M',55,70,24,'170–176'],['L',58,72,25,'176–182'],['XL',61,74,26,'182–188']] },
+  sweater: { cols:['Размер','Грудь','Длина','Рукав','Рост'], rows:[['S',53,65,62,'164–170'],['M',56,67,64,'170–176'],['L',59,69,66,'176–182'],['XL',62,71,67,'182–188'],['XXL',65,73,68,'188–194']] },
+};
 const fmt = n => n.toLocaleString('ru-RU') + ' ₽';
 /* Скорость поворота на штанге: 1 = как в исходном видео (~2.5 с), 1.6 ≈ 1.5 с */
 const SPEED = 1.6;
@@ -370,7 +389,10 @@ function openProduct(it){
   $('#p-thumbs').innerHTML = ['front','side'].map((v,i)=>`<button class="${i?'':'cur'}" data-src="media/${it.id}-${v}.webp"><img src="media/${it.id}-${v}.webp" alt=""></button>`).join('');
   $('#p-thumbs').querySelectorAll('button').forEach(b => b.onclick = () => { main.src = b.dataset.src; $('#p-thumbs .cur')?.classList.remove('cur'); b.classList.add('cur'); });
   $('#p-sizes').innerHTML = it.sizes.map(s => `<button>${s}</button>`).join('');
-  $('#p-sizes').querySelectorAll('button').forEach(b => b.onclick = () => { pSize = b.textContent; $('#p-sizes .cur')?.classList.remove('cur'); b.classList.add('cur'); });
+  $('#p-sizes').querySelectorAll('button').forEach(b => b.onclick = () => { pSize = b.textContent; $('#p-sizes .cur')?.classList.remove('cur'); b.classList.add('cur'); markChartRow(); });
+  const ch = CHARTS[it.chart] || CHARTS.jacket;
+  $('#chart-table').innerHTML = '<tr>' + ch.cols.map(c => `<th>${c}</th>`).join('') + '</tr>' + ch.rows.map(r => `<tr data-size="${r[0]}">` + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('');
+  $('#chart').classList.remove('open');
   const add = $('#p-add'); add.textContent = 'В корзину'; add.classList.remove('done');
   home.style.display = 'none'; prod.classList.add('open'); window.scrollTo(0,0);
 }
@@ -378,6 +400,8 @@ function goHome(){ prod.classList.remove('open'); home.style.display = ''; windo
 $('#back').onclick = e => { e.preventDefault(); goHome(); };
 $('#home-link').onclick = e => { e.preventDefault(); goHome(); };
 $('#shop-link').onclick = e => { e.preventDefault(); goHome(); };
+function markChartRow(){ $('#chart-table').querySelectorAll('tr').forEach(tr => tr.classList.toggle('cur', tr.dataset.size === pSize)); }
+$('#chart-toggle').onclick = () => $('#chart').classList.toggle('open');
 $('#q-minus').onclick = () => { pQty = Math.max(1, pQty-1); $('#q-val').textContent = pQty; };
 $('#q-plus').onclick = () => { pQty++; $('#q-val').textContent = pQty; };
 $('#p-add').onclick = () => {
