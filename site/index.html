@@ -87,12 +87,18 @@
   .overlay .hero video,.overlay .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
   .overlay .hero video{opacity:0}
   .overlay .hero video.show{opacity:1}
-  .overlay .meta{position:absolute;left:0;right:0;bottom:0;z-index:2;text-align:center;padding:14px 0 28px;background:linear-gradient(transparent,var(--bg) 45%)}
-  .overlay .meta h2{font-family:"Inter Tight",sans-serif;font-weight:500;font-size:18px;letter-spacing:.06em;margin:0 0 6px}
-  .overlay .meta .sub{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:22px}
-  .overlay .meta .actions{display:flex;gap:28px;justify-content:center;font-size:12px}
-  .overlay .meta .actions button{padding-bottom:3px;border-bottom:1px solid var(--ink)}
-  .overlay .meta .actions .replay{color:var(--muted);border-color:var(--line)}
+  /* вещь смещена влево, справа — панель с размерами и заказом */
+  .overlay .hero{margin-right:360px}
+  .overlay .ghosts{margin-right:360px}
+  .overlay .panel{position:absolute;z-index:2;top:84px;right:40px;bottom:32px;width:360px;overflow:auto;padding:26px 26px 22px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.06)}
+  .overlay .panel h2{font-family:"Inter Tight",sans-serif;font-weight:500;font-size:20px;letter-spacing:.02em;margin:0 0 6px}
+  .overlay .panel .sub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+  .overlay .panel .price{font-size:16px;margin:12px 0 6px}
+  .overlay .panel .chart{margin-top:14px;padding:0;border:0;background:none}
+  .overlay .panel .add{width:100%;margin-top:18px}
+  .overlay .panel .links{display:flex;justify-content:space-between;margin-top:18px;font-size:12px}
+  .overlay .panel .links button{padding-bottom:2px;border-bottom:1px solid var(--line);color:var(--muted)}
+  .overlay .panel .links #ov-open{color:var(--ink);border-color:var(--ink)}
 
   /* ---------- Страница товара ---------- */
   #product{display:none;width:min(1200px,100%);margin:0 auto;padding:10px 32px 80px;grid-template-columns:1.1fr 1fr;gap:56px}
@@ -115,7 +121,7 @@
   .chart.open{display:block}
   .chart table{width:100%;border-collapse:collapse;font-size:12.5px}
   .chart th{font-weight:500;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
-  .chart td{padding:8px;border-bottom:1px solid #f0efeb}
+  .chart td{padding:8px;border-bottom:1px solid #f0efeb;white-space:nowrap}
   .chart td:first-child{font-weight:500}
   .chart tr.cur td{background:var(--bg)}
   .chart p{margin:12px 0 0;font-size:11.5px;color:var(--muted);line-height:1.5}
@@ -158,6 +164,8 @@
     .rail{left:16px;right:16px}
     #product{grid-template-columns:1fr;gap:24px;padding:0 16px 60px}
     .overlay .ghosts{display:none}
+    .overlay .hero{margin-right:0;height:calc(var(--item-h) * .7)}
+    .overlay .panel{top:auto;left:12px;right:12px;bottom:12px;width:auto;max-height:52vh;padding:18px}
     .overlay .bar{grid-template-columns:1fr auto}
     .overlay .bar .logo{display:none}
     .overlay .hero{height:min(58vh,520px)}
@@ -196,14 +204,18 @@
     <div class="ghosts" id="ghosts"></div>
     <div class="hero" id="hero"></div>
   </div>
-  <div class="meta">
+  <aside class="panel" id="ov-panel">
     <h2 id="ov-title"></h2>
     <div class="sub" id="ov-sub"></div>
-    <div class="actions">
-      <button class="replay" id="ov-replay">Повернуть ещё раз</button>
-      <button id="ov-open">Открыть товар</button>
+    <div class="price" id="ov-price"></div>
+    <div class="field"><label>Размер</label><div class="sizes" id="ov-sizes"></div></div>
+    <div class="chart open"><table id="ov-chart"></table><p>Замеры изделия в см. Грудь — полуобхват под рукавами. Между размерами — берите больший, крой свободный.</p></div>
+    <button class="add order" id="ov-order">Заказать</button>
+    <div class="links">
+      <button id="ov-replay">Повернуть ещё раз</button>
+      <button id="ov-open">Подробнее о товаре →</button>
     </div>
-  </div>
+  </aside>
 </div>
 
 <!-- ============ СТРАНИЦА ТОВАРА ============ -->
@@ -349,10 +361,17 @@ ITEMS.forEach(it => {
 /* ============ МОДАЛКА ============ */
 const overlay = $('#overlay'), hero = $('#hero'), ghosts = $('#ghosts');
 let current = null;
+let ovSize = null;
 function openOverlay(it){
-  current = it;
+  current = it; ovSize = null;
   $('#ov-title').textContent = it.name;
-  $('#ov-sub').textContent = it.sub + ' · ' + fmt(it.price);
+  $('#ov-sub').textContent = it.sub;
+  $('#ov-price').textContent = fmt(it.price);
+  $('#ov-sizes').innerHTML = it.sizes.map(s => `<button>${s}</button>`).join('');
+  $('#ov-sizes').querySelectorAll('button').forEach(b => b.onclick = () => { ovSize = b.textContent; $('#ov-sizes .cur')?.classList.remove('cur'); b.classList.add('cur'); $('#ov-chart').querySelectorAll('tr').forEach(tr => tr.classList.toggle('cur', tr.dataset.size === ovSize)); });
+  const ch = CHARTS[it.chart] || CHARTS.jacket;
+  $('#ov-chart').innerHTML = '<tr>' + ch.cols.map(c => `<th>${c}</th>`).join('') + '</tr>' + ch.rows.map(r => `<tr data-size="${r[0]}">` + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('');
+  const ob = $('#ov-order'); ob.textContent = 'Заказать'; ob.classList.remove('done');
   ghosts.innerHTML = ITEMS.filter(x => x.id !== it.id).map(x => `<img src="media/${x.id}-side.webp" alt="">`).join('');
   hero.innerHTML = `
     <img src="media/${it.id}-side.webp" alt="">
@@ -374,6 +393,12 @@ function closeOverlay(){
 $('#ov-close').onclick = closeOverlay;
 $('#ov-replay').onclick = () => { const v = hero.querySelector('video'); if (v){ v.currentTime = 0; v.play(); } };
 $('#ov-open').onclick = () => { closeOverlay(); openProduct(current); };
+$('#ov-order').onclick = () => {
+  if (!ovSize){ $('#ov-sizes').animate([{transform:'translateX(0)'},{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'translateX(0)'}],{duration:280}); return; }
+  addToCart(current, ovSize, 1);
+  const b = $('#ov-order'); b.textContent = 'Добавлено ✓'; b.classList.add('done');
+  setTimeout(() => { closeOverlay(); openDrawer(); }, 450);
+};
 document.addEventListener('keydown', e => { if (e.key === 'Escape'){ if (overlay.classList.contains('open')) closeOverlay(); closeDrawer(); } });
 
 /* ============ СТРАНИЦА ТОВАРА ============ */
